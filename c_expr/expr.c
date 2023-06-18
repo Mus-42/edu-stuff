@@ -10,14 +10,38 @@
 #include <stdlib.h>
 
 static void cexpr_free_expression_impl(void* expr);
-static double cexpr_eval_expression_impl(CExprExecutor* exec, void* expr);
+static double cexpr_eval_expression_impl(const CExprExecutor* exec, void* expr);
 static void* cexpr_parce_impl(const char* str, size_t len);
 
 const CExprFunctionBindDesc __cexpr_buitin_functions[CEXPR_BUILTIN_FUNCTIONS_COUNT] = {
-    {"sqrt", (void*)&sqrt, 1}
+    {"abs", (void*)&fabs, 1},
+    {"mod", (void*)&fmod, 2},
+
+    {"exp", (void*)&exp, 1},
+    {"exp2", (void*)&exp2, 1},
+    {"log", (void*)&log, 1},
+    {"log2", (void*)&log2, 1},
+    {"log10", (void*)&log10, 1},
+
+    {"pow", (void*)&pow, 2},
+    {"sqrt", (void*)&sqrt, 1},
+    {"cbrt", (void*)&cbrt, 1},
+
+    {"sin", (void*)&sin, 1},
+    {"cos", (void*)&cos, 1},
+    {"tan", (void*)&tan, 1},
+    {"asin", (void*)&asin, 1},
+    {"acos", (void*)&acos, 1},
+    {"atan", (void*)&atan, 1},
+    {"atan2", (void*)&atan2, 2},
+
+    {"ceil", (void*)&ceil, 1},
+    {"floor", (void*)&floor, 1},
+    {"round", (void*)&round, 1},
 };
 const CExprConstantBindDesc __cexpr_buitin_constants[CEXPR_BUILTIN_CONSTANTS_COUNT] = {
-    {"pi", 3.14159265358979323846}
+    {"pi", 3.14159265358979323846},
+    {"e", 2.71828182845904523536}
 };
 const CExprExecutor __cexpr_buitin_executor = {
     0, CEXPR_BUILTIN_CONSTANTS, CEXPR_BUILTIN_FUNCTIONS,
@@ -177,10 +201,10 @@ static void cexpr_free_expression_impl(void* expr) {
     free(expr);
 }
 
-static void* cexpr_find_function_by_name(CExprExecutor* exec, size_t args_count, const char* fn_name, size_t name_len) {
+static void* cexpr_find_function_by_name(const CExprExecutor* exec, size_t args_count, const char* fn_name, size_t name_len) {
     if (!exec || !fn_name || !name_len) return 0;
     for (size_t i = 0; i < exec->m_fun_size; i++) {
-        if (args_count != exec->m_fun[i].args_count) continue;
+        if (args_count != (size_t)exec->m_fun[i].args_count) continue;
         bool is_ok = true;
         const char* cur_fn = exec->m_fun[i].name;
         for (size_t j = 0; j < name_len; j++)
@@ -193,7 +217,7 @@ static void* cexpr_find_function_by_name(CExprExecutor* exec, size_t args_count,
     return 0;
 }
 
-static double* cexpr_find_variable_by_name(CExprExecutor* exec, const char* var_name, size_t name_len) {
+static double* cexpr_find_variable_by_name(const CExprExecutor* exec, const char* var_name, size_t name_len) {
     if (!exec || !var_name || !name_len) return 0;
     for (size_t i = 0; i < exec->m_var_size; i++) {
         bool is_ok = true;
@@ -207,7 +231,7 @@ static double* cexpr_find_variable_by_name(CExprExecutor* exec, const char* var_
     }
     return 0;
 }
-static double cexpr_find_counstant_by_name(CExprExecutor* exec, const char* const_name, size_t name_len) {
+static double cexpr_find_counstant_by_name(const CExprExecutor* exec, const char* const_name, size_t name_len) {
     if (!exec || !const_name || !name_len) return NAN;
     for (size_t i = 0; i < exec->m_const_size; i++) {
         bool is_ok = true;
@@ -222,11 +246,11 @@ static double cexpr_find_counstant_by_name(CExprExecutor* exec, const char* cons
     return NAN;
 }
 
-static double cexpr_eval_expression_impl(CExprExecutor* exec, void* expr) {
+static double cexpr_eval_expression_impl(const CExprExecutor* exec, void* expr) {
     if (!expr) return NAN;
     switch (((CExprNodeCommon*)expr)->node_type) {
     case CEXPR_NODE_NONE: 
-        break;
+        return NAN;
     case CEXPR_NODE_OPERATOR: 
         double l = cexpr_eval_expression_impl(exec, ((CExprOperatorNode*)expr)->l_node);
         double r = cexpr_eval_expression_impl(exec, ((CExprOperatorNode*)expr)->r_node);
@@ -299,7 +323,7 @@ static double cexpr_eval_expression_impl(CExprExecutor* exec, void* expr) {
     
     default: 
         return NAN;
-    } 
+    }
 }
 
 typedef struct CExprTokenizer {
@@ -346,7 +370,7 @@ static void cexpr_parse_next_token(CExprTokenizer* tk) {
     case '5': case '6': case '7': case '8': case '9': 
         tk->cur_token_type = TK_NUMBER;
         // TODO string can be non-null terminated. replace with custom function
-        tk->number_token_value = strtod(tk->str_cur, &tk->str_cur); 
+        tk->number_token_value = strtod(tk->str_cur, (char**)&tk->str_cur); 
         break;
     
     default:
@@ -387,7 +411,7 @@ static void* cexpr_parce_0_level(CExprTokenizer* tk) {
     }
     if (tk->cur_token_type == TK_ID) {
         const char* name = tk->id_token_begin;
-        const char* len = tk->id_token_length;
+        size_t len = tk->id_token_length;
         cexpr_parse_next_token(tk);
         // function
         if (tk->cur_token_type == TK_CHAR && tk->char_token_value == '(') {

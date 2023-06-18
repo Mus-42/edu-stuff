@@ -4,9 +4,9 @@
 #define _C_EXPR_EXPR_H_INCLUDE_
 
 #define CEXPR_BUILTIN_FUNCTIONS ((CExprFunctionBindDesc*)__cexpr_buitin_functions)
-#define CEXPR_BUILTIN_FUNCTIONS_COUNT 1
+#define CEXPR_BUILTIN_FUNCTIONS_COUNT 20
 #define CEXPR_BUILTIN_CONSTANTS ((CExprConstantBindDesc*)__cexpr_buitin_constants)
-#define CEXPR_BUILTIN_CONSTANTS_COUNT 1
+#define CEXPR_BUILTIN_CONSTANTS_COUNT 2
 #define CEXPR_BUILTIN_EXECUTOR (&__cexpr_buitin_executor)
 
 #include <stddef.h>
