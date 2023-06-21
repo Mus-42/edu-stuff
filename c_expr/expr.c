@@ -290,7 +290,7 @@ static double cexpr_eval_expression_impl(const CExprExecutor* exec, void* expr) 
         CExprFunctionCall0Node* cur_node = (CExprFunctionCall0Node*)expr;
         void* cur_fn = cexpr_find_function_by_name(exec, 0, cur_node->function_name, cur_node->name_len);
         if (!cur_fn) return NAN;
-        return ((double(*)())cur_fn)();
+        return ((double(*)(void))cur_fn)();
     }
     case CEXPR_NODE_FUNCTION_CALL1:
     {
