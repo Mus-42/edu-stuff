@@ -1,0 +1,9 @@
+[workspace]
+
+members = [
+    "ugolki_solver",
+    "ugolki_game"
+]
+
+[profile.release]
+debug = true
